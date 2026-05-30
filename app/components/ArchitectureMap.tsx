@@ -25,7 +25,7 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
   onMouseEnter: () => void; onMouseLeave: () => void; onClick: () => void;
 }) {
   const dashArray = conn.style === "dashed" ? "6 4" : conn.style === "dotted" ? "2 4" : undefined;
-  const labelWidth = Math.max(conn.label.length * 7 + 16, 70);
+  const labelWidth = Math.max(conn.label.length * 8.5 + 20, 80);
   const halfW = labelWidth / 2;
   const strokeColor = isHovered ? "#C41230" : "#94a3b8";
   const sw = isHovered ? 2 : 1.2;
@@ -46,21 +46,33 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
         <path d={pathD} fill="none" stroke={strokeColor} strokeWidth={sw}
           strokeDasharray={dashArray} markerEnd="url(#arrowhead)" style={{ transition: "stroke 0.15s" }} />
         <path d={pathD} fill="none" stroke="transparent" strokeWidth={14} />
-        <rect x={mx - halfW} y={my - 9} width={labelWidth} height={18} rx={3} fill={isHovered ? "#C41230" : "white"}
+        <rect x={mx - halfW} y={my - 11} width={labelWidth} height={22} rx={3} fill={isHovered ? "#C41230" : "white"}
           stroke={isHovered ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
-        <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={9} fontWeight={600}
+        <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={11} fontWeight={600}
           fill={isHovered ? "white" : "#64748b"} fontFamily="Arial, sans-serif"
           style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>{conn.label}</text>
       </g>
     );
   }
 
+  const lo = conn.lineOffset || 0;
   const fromCenter = getCenter(fromNode);
   const toCenter = getCenter(toNode);
-  const p1 = getEdgePoint(fromNode, toCenter);
-  const p2 = getEdgePoint(toNode, fromCenter);
-  const mx = (p1.x + p2.x) / 2;
-  const my = (p1.y + p2.y) / 2;
+  const dx = toCenter.x - fromCenter.x;
+  const dy = toCenter.y - fromCenter.y;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const nx = -dy / len * lo;
+  const ny = dx / len * lo;
+  const fc = { x: fromCenter.x + nx, y: fromCenter.y + ny };
+  const tc = { x: toCenter.x + nx, y: toCenter.y + ny };
+  const p1 = getEdgePoint(fromNode, tc);
+  const p2 = getEdgePoint(toNode, fc);
+  p1.x += nx; p1.y += ny;
+  p2.x += nx; p2.y += ny;
+  const ldx = conn.labelOffset?.dx || 0;
+  const ldy = conn.labelOffset?.dy || 0;
+  const mx = (p1.x + p2.x) / 2 + ldx;
+  const my = (p1.y + p2.y) / 2 + ldy;
 
   return (
     <g style={{ cursor: "pointer" }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onClick={onClick}>
@@ -68,9 +80,9 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
         stroke={strokeColor} strokeWidth={sw}
         strokeDasharray={dashArray} markerEnd="url(#arrowhead)" style={{ transition: "stroke 0.15s, stroke-width 0.15s" }} />
       <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth={14} />
-      <rect x={mx - halfW} y={my - 9} width={labelWidth} height={18} rx={3} fill={isHovered ? "#C41230" : "white"}
+      <rect x={mx - halfW} y={my - 11} width={labelWidth} height={22} rx={3} fill={isHovered ? "#C41230" : "white"}
         stroke={isHovered ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
-      <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={9} fontWeight={600}
+      <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={11} fontWeight={600}
         fill={isHovered ? "white" : "#64748b"} fontFamily="Arial, sans-serif"
         style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>{conn.label}</text>
     </g>
@@ -79,38 +91,43 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
 
 function PersonIcon({ x, y, color }: { x: number; y: number; color: string }) {
   return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx={0} cy={-5} r={3.5} />
-      <path d="M-7,7 C-7,2 -4,-1 0,-1 C4,-1 7,2 7,7" />
+    <g transform={`translate(${x}, ${y}) scale(1.6)`} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx={0} cy={-5} r={3.5} fill={color} opacity={0.15} stroke={color} strokeWidth={1.3} />
+      <circle cx={0} cy={-5} r={3.5} fill="none" stroke={color} strokeWidth={1.3} />
+      <path d="M-7,7 C-7,2 -4,-1 0,-1 C4,-1 7,2 7,7" fill={color} opacity={0.1} stroke={color} strokeWidth={1.3} />
     </g>
   );
 }
 
 function DatabaseIcon({ x, y, color }: { x: number; y: number; color: string }) {
   return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={color} strokeWidth={1.4}>
-      <ellipse cx={0} cy={-6} rx={8} ry={3.5} />
-      <line x1={-8} y1={-6} x2={-8} y2={6} />
-      <line x1={8} y1={-6} x2={8} y2={6} />
-      <ellipse cx={0} cy={6} rx={8} ry={3.5} />
+    <g transform={`translate(${x}, ${y}) scale(1.5)`}>
+      <path d="M-8,-6 L-8,6 C-8,9 -4,10 0,10 C4,10 8,9 8,6 L8,-6" fill={color} opacity={0.08} stroke="none" />
+      <ellipse cx={0} cy={-6} rx={8} ry={3.5} fill={color} opacity={0.15} stroke={color} strokeWidth={1.3} />
+      <line x1={-8} y1={-6} x2={-8} y2={6} stroke={color} strokeWidth={1.3} />
+      <line x1={8} y1={-6} x2={8} y2={6} stroke={color} strokeWidth={1.3} />
+      <ellipse cx={0} cy={6} rx={8} ry={3.5} fill="none" stroke={color} strokeWidth={1.3} />
     </g>
   );
 }
 
 function ComponentIcon({ x, y, color }: { x: number; y: number; color: string }) {
   return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
-      <rect x={-7} y={-7} width={14} height={14} rx={2} />
-      <line x1={-3} y1={-2} x2={3} y2={-2} />
-      <line x1={-3} y1={2} x2={1} y2={2} />
+    <g transform={`translate(${x}, ${y}) scale(1.5)`} strokeLinecap="round" strokeLinejoin="round">
+      <rect x={-8} y={-8} width={16} height={16} rx={3} fill={color} opacity={0.1} stroke={color} strokeWidth={1.3} />
+      <circle cx={0} cy={0} r={3} fill={color} opacity={0.2} stroke={color} strokeWidth={1} />
+      <line x1={0} y1={-5.5} x2={0} y2={-3} stroke={color} strokeWidth={1} />
+      <line x1={0} y1={3} x2={0} y2={5.5} stroke={color} strokeWidth={1} />
+      <line x1={-5.5} y1={0} x2={-3} y2={0} stroke={color} strokeWidth={1} />
+      <line x1={3} y1={0} x2={5.5} y2={0} stroke={color} strokeWidth={1} />
     </g>
   );
 }
 
 function FilterIcon({ x, y, color }: { x: number; y: number; color: string }) {
   return (
-    <g transform={`translate(${x}, ${y})`} fill="none" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M-8,-7 L8,-7 L2,1 L2,7 L-2,9 L-2,1 Z" />
+    <g transform={`translate(${x}, ${y}) scale(1.5)`} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M-8,-7 L8,-7 L2,1 L2,7 L-2,9 L-2,1 Z" fill={color} opacity={0.1} stroke={color} strokeWidth={1.3} />
     </g>
   );
 }
@@ -142,10 +159,10 @@ function NodeCard({ node, isHovered, onMouseEnter, onMouseLeave, onClick }: {
         style={{ transition: "fill 0.15s, stroke-width 0.15s" }} />
       <NodeIcon icon={node.icon} x={cx} y={iconY} color={node.color} />
       <text x={cx} y={labelY} textAnchor="middle"
-        fontSize={11.5} fontWeight={700} fill={node.color} fontFamily="Arial, sans-serif"
+        fontSize={14} fontWeight={700} fill={node.color} fontFamily="Arial, sans-serif"
         style={{ pointerEvents: "none", userSelect: "none" }}>{node.label}</text>
       <text x={cx} y={typeY} textAnchor="middle"
-        fontSize={9} fill="#94a3b8" fontFamily="Arial, sans-serif"
+        fontSize={11} fill="#94a3b8" fontFamily="Arial, sans-serif"
         style={{ pointerEvents: "none", userSelect: "none" }}>{node.type}</text>
     </g>
   );
@@ -230,18 +247,31 @@ export default function ArchitectureMap() {
           </marker>
         </defs>
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
-          {/* Tier labels */}
-          {[
-            { y: 55, label: "OVERSIGHT" },
-            { y: 210, label: "ENGINE" },
-            { y: 365, label: "INPUT GATE" },
-            { y: 520, label: "ACTORS" },
-            { y: 645, label: "SUPPORT" },
-          ].map((t) => (
-            <text key={t.label} x={950} y={t.y} textAnchor="end" fontSize={9} fontWeight={700}
-              fill="#cbd5e1" letterSpacing="0.12em" fontFamily="Arial, sans-serif"
-              style={{ userSelect: "none" }}>{t.label}</text>
-          ))}
+          {/* Tier scaffolding */}
+          {(() => {
+            const tiers = [
+              { y1: 15, y2: 128, label: "OVERSIGHT" },
+              { y1: 128, y2: 280, label: "ENGINE" },
+              { y1: 280, y2: 430, label: "INPUT GATE" },
+              { y1: 430, y2: 590, label: "ACTORS" },
+              { y1: 590, y2: 720, label: "SUPPORT" },
+            ];
+            const railX = 980;
+            return (
+              <g>
+                <line x1={railX} y1={tiers[0].y1} x2={railX} y2={tiers[tiers.length - 1].y2} stroke="#043673" strokeWidth={2} opacity={0.15} />
+                {tiers.map((t) => (
+                  <g key={t.label}>
+                    <line x1={railX - 16} y1={t.y1} x2={railX} y2={t.y1} stroke="#043673" strokeWidth={1.5} opacity={0.15} />
+                    <text x={railX - 22} y={(t.y1 + t.y2) / 2 + 4} textAnchor="end" fontSize={12} fontWeight={800}
+                      fill="#043673" opacity={0.35} letterSpacing="0.14em" fontFamily="Arial, sans-serif"
+                      style={{ userSelect: "none" }}>{t.label}</text>
+                  </g>
+                ))}
+                <line x1={railX - 16} y1={tiers[tiers.length - 1].y2} x2={railX} y2={tiers[tiers.length - 1].y2} stroke="#043673" strokeWidth={1.5} opacity={0.15} />
+              </g>
+            );
+          })()}
 
           {/* Adjudication zone */}
           <rect x={8} y={8} width={205} height={105} rx={8} fill="none" stroke="#e2e8f0" strokeWidth={1} strokeDasharray="4 4" />

@@ -21,6 +21,8 @@ export interface Connection {
   description: string;
   style: "solid" | "dashed" | "dotted";
   waypoints?: { x: number; y: number }[];
+  labelOffset?: { dx: number; dy: number };
+  lineOffset?: number;
 }
 
 export const NODES: Node[] = [
@@ -33,8 +35,8 @@ export const NODES: Node[] = [
     border: "#043673",
     x: 520,
     y: 30,
-    w: 180,
-    h: 72,
+    w: 210,
+    h: 84,
     icon: "person",
     description:
       "Full oversight of the game. Only role with complete visibility: all teams' indicators, full world state, backend event/inject tags. Reviews engine output each round (approve or edit) before it reaches players. Receives inject recommendations from White Cell Agent and decides whether to queue them. Can manually advance rounds. Decides when the game ends.",
@@ -48,8 +50,8 @@ export const NODES: Node[] = [
     border: "#007BC0",
     x: 270,
     y: 30,
-    w: 180,
-    h: 72,
+    w: 210,
+    h: 84,
     icon: "component",
     description:
       "Separate AI agent that monitors game state continuously during each round. Recommends scenario injects to the Game Manager in plain language. Game Manager approves or rejects. Approved injects queue and fire only at round boundaries, processed through the World Engine to keep state consistent. Can propose at any time, but nothing changes until the round transition.",
@@ -63,8 +65,8 @@ export const NODES: Node[] = [
     border: "#C41230",
     x: 370,
     y: 180,
-    w: 200,
-    h: 72,
+    w: 210,
+    h: 84,
     icon: "component",
     description:
       "Central simulation engine. Receives all actor decisions, the full world state, and any queued injects in a single API call per round. Returns structured JSON: one global event, global indicator updates, per-team indicator updates, and per-team narrative. Claude proposes JSON patches; the platform validates and applies them. The engine never sees advisor conversations.",
@@ -78,8 +80,8 @@ export const NODES: Node[] = [
     border: "#008285",
     x: 700,
     y: 180,
-    w: 180,
-    h: 72,
+    w: 210,
+    h: 84,
     icon: "data",
     description:
       "Single source of truth. Two layers: Global State (strategic environment, sector files, shared indicators) and Per-Team State (each team's indicators, resources, position). Snapshots saved each round for adjudication. Older rounds summarized to keep context manageable (context compaction). Updates exactly once per round, at the round transition, after Game Manager approval.",
@@ -93,8 +95,8 @@ export const NODES: Node[] = [
     border: "#999",
     x: 80,
     y: 180,
-    w: 170,
-    h: 72,
+    w: 190,
+    h: 84,
     icon: "data",
     description:
       "Full-fidelity record of the game. Stores every decision, state snapshot (before/after), narrative, AI actor actions, event/inject tags, chat logs, and negotiation transcripts. Primary data source for the Adjudication Agent. Game Manager can view the decision log during gameplay.",
@@ -108,8 +110,8 @@ export const NODES: Node[] = [
     border: "#D4A017",
     x: 370,
     y: 340,
-    w: 200,
-    h: 66,
+    w: 210,
+    h: 78,
     icon: "filter",
     description:
       "Pre-filter that screens all actor decisions before they reach the World Engine. Catches nonsensical input, out-of-character actions, or system-gaming attempts before burning an Opus API call. Can be rule-based or a lightweight LLM call (Haiku-class). Rejected decisions return to the submitting team with an explanation.",
@@ -123,8 +125,8 @@ export const NODES: Node[] = [
     border: "#043673",
     x: 80,
     y: 490,
-    w: 180,
-    h: 72,
+    w: 210,
+    h: 84,
     icon: "person",
     description:
       "A team of students playing a specific geopolitical role (e.g., United States). Multiple players deliberate internally, consult role-specific advisors (State Dept, DoD, IC), negotiate with other teams and AI actors, and submit one collective free-text decision per round. They see role-filtered indicators and a per-team narrative. They do not see other teams' indicators or backend tags.",
@@ -138,8 +140,8 @@ export const NODES: Node[] = [
     border: "#007BC0",
     x: 380,
     y: 490,
-    w: 180,
-    h: 72,
+    w: 210,
+    h: 84,
     icon: "component",
     description:
       "AI-controlled actors filling team seats not occupied by humans. Processed identically to human teams by the engine. Generate initial negotiation positions early in the round so human teams can engage. Finalize decisions informed by negotiation transcripts. Single-team mode = all other seats are AI. Multi-team mode = mix of human and AI seats.",
@@ -153,8 +155,8 @@ export const NODES: Node[] = [
     border: "#043673",
     x: 700,
     y: 490,
-    w: 180,
-    h: 72,
+    w: 210,
+    h: 84,
     icon: "person",
     description:
       "A second team playing an opposing role (e.g., China). Same interface as Team 1 but with different role-specific advisors (PRC Leadership, PLA Military, MSS Intel, Ministry of Commerce) and different filtered indicators reflecting their position. Their decisions may directly conflict with Team 1's. The engine reconciles both in a single call.",
@@ -168,8 +170,8 @@ export const NODES: Node[] = [
     border: "#007BC0",
     x: 80,
     y: 620,
-    w: 160,
-    h: 66,
+    w: 180,
+    h: 78,
     icon: "component",
     description:
       "Role-specific advisors for Team 1 (e.g., State Dept, Commerce, DHS for a US team). See a filtered slice of the world state matching their domain. Airgapped: the engine never sees these conversations, and nothing said here changes game state. Players must synthesize across advisors to get the full picture.",
@@ -183,8 +185,8 @@ export const NODES: Node[] = [
     border: "#007BC0",
     x: 720,
     y: 620,
-    w: 160,
-    h: 66,
+    w: 180,
+    h: 78,
     icon: "component",
     description:
       "Role-specific advisors for Team 2 (e.g., Ministry of Foreign Affairs, Ministry of Commerce for a China team). Same airgapped behavior as Team 1 advisors, but with different roles matching Team 2's position. Already built into the OGE platform.",
@@ -198,8 +200,8 @@ export const NODES: Node[] = [
     border: "#007BC0",
     x: 20,
     y: 30,
-    w: 180,
-    h: 72,
+    w: 210,
+    h: 84,
     icon: "component",
     description:
       "Provides round-by-round and post-game analysis. During gameplay, it generates per-round evaluation and suggestions that the Game Manager can use to provide feedback to teams. After the game ends, it produces a full scorecard, per-team written analysis, and cross-team synthesis. Receives state snapshots, decisions, event/inject tags, chat logs, negotiation transcripts, and a RAG library of case studies. Output always goes to the Game Manager, never directly to players.",
@@ -211,10 +213,10 @@ export const CONNECTIONS: Connection[] = [
   { id: "c2", from: "team2", to: "reasoncheck", label: "Submit decision", description: "One collective free-text decision per round, may directly conflict with Team 1.", style: "solid" },
   { id: "c3", from: "ai_actors", to: "reasoncheck", label: "Submit decision", description: "AI decisions informed by negotiation transcripts, same check as human teams.", style: "solid" },
   { id: "c4", from: "reasoncheck", to: "engine", label: "Validated decisions", description: "Decisions that pass the filter are forwarded for processing.", style: "solid" },
-  { id: "c5", from: "gm", to: "engine", label: "Approve + injects", description: "Approves engine output and includes any queued injects for next processing.", style: "solid" },
-  { id: "c6", from: "engine", to: "gm", label: "Proposed output", description: "Global event + per-team updates sent for review before reaching players.", style: "solid" },
-  { id: "c7", from: "engine", to: "worldstate", label: "Apply updates", description: "After approval, platform applies JSON patches; snapshot saved; log appended.", style: "solid" },
-  { id: "c8", from: "worldstate", to: "engine", label: "Load state", description: "Full world state (global + per-team + decision log) loaded into context.", style: "solid" },
+  { id: "c5", from: "gm", to: "engine", label: "Approve + injects", description: "Approves engine output and includes any queued injects for next processing.", style: "solid", lineOffset: -14, labelOffset: { dx: -14, dy: 0 } },
+  { id: "c6", from: "engine", to: "gm", label: "Proposed output", description: "Global event + per-team updates sent for review before reaching players.", style: "solid", lineOffset: 14, labelOffset: { dx: 14, dy: 0 } },
+  { id: "c7", from: "engine", to: "worldstate", label: "Apply updates", description: "After approval, platform applies JSON patches; snapshot saved; log appended.", style: "solid", lineOffset: -6, labelOffset: { dx: 0, dy: -14 } },
+  { id: "c8", from: "worldstate", to: "engine", label: "Load state", description: "Full world state (global + per-team + decision log) loaded into context.", style: "solid", lineOffset: 6, labelOffset: { dx: 0, dy: 14 } },
   { id: "c9", from: "engine", to: "logdb", label: "Log round", description: "All decisions, output, snapshots, indicators changed, event/inject tags.", style: "solid" },
   { id: "c10", from: "worldstate", to: "team1", label: "Filtered state", description: "Updated indicators filtered to Team 1's role + global event + per-team narrative.", style: "solid", waypoints: [{ x: 40, y: 350 }] },
   { id: "c11", from: "worldstate", to: "team2", label: "Filtered state", description: "Same structure, filtered to Team 2's role with different indicator values.", style: "solid" },
