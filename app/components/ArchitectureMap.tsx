@@ -77,31 +77,75 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
   );
 }
 
+function PersonIcon({ x, y, color }: { x: number; y: number; color: string }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx={0} cy={-5} r={3.5} />
+      <path d="M-7,7 C-7,2 -4,-1 0,-1 C4,-1 7,2 7,7" />
+    </g>
+  );
+}
+
+function DatabaseIcon({ x, y, color }: { x: number; y: number; color: string }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={color} strokeWidth={1.4}>
+      <ellipse cx={0} cy={-6} rx={8} ry={3.5} />
+      <line x1={-8} y1={-6} x2={-8} y2={6} />
+      <line x1={8} y1={-6} x2={8} y2={6} />
+      <ellipse cx={0} cy={6} rx={8} ry={3.5} />
+    </g>
+  );
+}
+
+function ComponentIcon({ x, y, color }: { x: number; y: number; color: string }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+      <rect x={-7} y={-7} width={14} height={14} rx={2} />
+      <line x1={-3} y1={-2} x2={3} y2={-2} />
+      <line x1={-3} y1={2} x2={1} y2={2} />
+    </g>
+  );
+}
+
+function FilterIcon({ x, y, color }: { x: number; y: number; color: string }) {
+  return (
+    <g transform={`translate(${x}, ${y})`} fill="none" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M-8,-7 L8,-7 L2,1 L2,7 L-2,9 L-2,1 Z" />
+    </g>
+  );
+}
+
+function NodeIcon({ icon, x, y, color }: { icon: string; x: number; y: number; color: string }) {
+  if (icon === "person") return <PersonIcon x={x} y={y} color={color} />;
+  if (icon === "data") return <DatabaseIcon x={x} y={y} color={color} />;
+  if (icon === "filter") return <FilterIcon x={x} y={y} color={color} />;
+  return <ComponentIcon x={x} y={y} color={color} />;
+}
+
 function NodeCard({ node, isHovered, onMouseEnter, onMouseLeave, onClick }: {
   node: Node; isHovered: boolean;
   onMouseEnter: () => void; onMouseLeave: () => void; onClick: () => void;
 }) {
+  const cx = node.x + node.w / 2;
+  const iconY = node.y + 20;
+  const labelY = node.y + node.h - 20;
+  const typeY = node.y + node.h - 8;
+
   return (
     <g style={{ cursor: "pointer" }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onClick={onClick}>
       {isHovered && (
         <rect x={node.x - 3} y={node.y - 3} width={node.w + 6} height={node.h + 6} rx={9}
-          fill="none" stroke={node.color} strokeWidth={2} opacity={0.25} />
+          fill={node.bg} stroke={node.color} strokeWidth={1.5} opacity={0.4} />
       )}
       <rect x={node.x} y={node.y} width={node.w} height={node.h} rx={6}
-        fill={node.bg} stroke={node.border} strokeWidth={isHovered ? 2 : 1.5}
-        style={{ transition: "stroke-width 0.15s" }} />
-      {node.icon === "person" && (
-        <g transform={`translate(${node.x + 12}, ${node.y + node.h / 2})`}>
-          <circle r={5} fill={node.color} />
-          <circle r={1.8} cy={-1.5} fill="white" />
-          <path d="M-3.2,2.5 C-3.2,0.5 -1.5,-0.5 0,-0.5 C1.5,-0.5 3.2,0.5 3.2,2.5 Z" fill="white" />
-        </g>
-      )}
-      <text x={node.x + (node.icon === "person" ? 26 : 12)} y={node.y + (node.h / 2) - 5}
-        fontSize={12} fontWeight={700} fill={node.color} fontFamily="Arial, sans-serif"
+        fill={isHovered ? node.bg : "#fff"} stroke={node.border} strokeWidth={isHovered ? 1.5 : 1}
+        style={{ transition: "fill 0.15s, stroke-width 0.15s" }} />
+      <NodeIcon icon={node.icon} x={cx} y={iconY} color={node.color} />
+      <text x={cx} y={labelY} textAnchor="middle"
+        fontSize={11.5} fontWeight={700} fill={node.color} fontFamily="Arial, sans-serif"
         style={{ pointerEvents: "none", userSelect: "none" }}>{node.label}</text>
-      <text x={node.x + (node.icon === "person" ? 26 : 12)} y={node.y + (node.h / 2) + 10}
-        fontSize={9.5} fill="#64748b" fontFamily="Arial, sans-serif"
+      <text x={cx} y={typeY} textAnchor="middle"
+        fontSize={9} fill="#94a3b8" fontFamily="Arial, sans-serif"
         style={{ pointerEvents: "none", userSelect: "none" }}>{node.type}</text>
     </g>
   );
