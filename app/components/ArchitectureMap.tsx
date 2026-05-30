@@ -199,9 +199,9 @@ export default function ArchitectureMap() {
               style={{ userSelect: "none" }}>{t.label}</text>
           ))}
 
-          {/* Post-game zone */}
-          <rect x={8} y={8} width={190} height={170} rx={8} fill="none" stroke="#e2e8f0" strokeWidth={1} strokeDasharray="4 4" />
-          <text x={16} y={185} fontSize={8} fill="#cbd5e1" fontWeight={600} letterSpacing="0.1em" fontFamily="Arial, sans-serif" style={{ userSelect: "none" }}>POST-GAME</text>
+          {/* Adjudication zone */}
+          <rect x={8} y={8} width={205} height={105} rx={8} fill="none" stroke="#e2e8f0" strokeWidth={1} strokeDasharray="4 4" />
+          <text x={16} y={120} fontSize={8} fill="#cbd5e1" fontWeight={600} letterSpacing="0.1em" fontFamily="Arial, sans-serif" style={{ userSelect: "none" }}>ADJUDICATION</text>
 
           {/* Connections */}
           {CONNECTIONS.map((conn) => {

@@ -192,32 +192,17 @@ export const NODES: Node[] = [
   {
     id: "adjudication",
     label: "Adjudication Agent",
-    type: "Post-game / Claude LLM",
+    type: "Claude LLM",
     color: "#007BC0",
     bg: "#E8F2FA",
     border: "#007BC0",
     x: 20,
-    y: 95,
-    w: 165,
+    y: 30,
+    w: 180,
     h: 62,
     icon: "component",
     description:
-      "Runs only after the game ends. Works through full game history round by round in multiple API calls. Receives all state snapshots, decisions, event/inject tags, chat logs, negotiation transcripts, and a RAG library of case studies and strategy documents. Produces a scorecard, per-team written analysis, and cross-team synthesis.",
-  },
-  {
-    id: "adjudicator",
-    label: "Adjudicator",
-    type: "Professor / TA",
-    color: "#043673",
-    bg: "#EDF1F7",
-    border: "#043673",
-    x: 20,
-    y: 20,
-    w: 140,
-    h: 56,
-    icon: "person",
-    description:
-      "Reviews the Adjudication Agent's output and conducts the post-game debrief with students. May be the same person as the Game Manager.",
+      "Provides round-by-round and post-game analysis. During gameplay, it generates per-round evaluation and suggestions that the Game Manager can use to provide feedback to teams. After the game ends, it produces a full scorecard, per-team written analysis, and cross-team synthesis. Receives state snapshots, decisions, event/inject tags, chat logs, negotiation transcripts, and a RAG library of case studies. Output always goes to the Game Manager, never directly to players.",
   },
 ];
 
@@ -241,8 +226,8 @@ export const CONNECTIONS: Connection[] = [
   { id: "c17", from: "team1", to: "team2", label: "Negotiate", description: "Teams negotiate via platform interface; transcripts captured in log.", style: "dashed" },
   { id: "c18", from: "team1", to: "ai_actors", label: "Negotiate", description: "AI actors generate positions early; transcripts feed into AI final decisions.", style: "dashed" },
   { id: "c19", from: "team2", to: "ai_actors", label: "Negotiate", description: "Same as above from Team 2's side.", style: "dashed" },
-  { id: "c20", from: "logdb", to: "adjudication", label: "Full history", description: "Complete game record: snapshots, decisions, tags, chats, transcripts.", style: "solid" },
-  { id: "c21", from: "adjudication", to: "adjudicator", label: "Evaluation", description: "Scorecard + per-team analysis + cross-team synthesis.", style: "solid" },
+  { id: "c20", from: "logdb", to: "adjudication", label: "Game history", description: "State snapshots, decisions, tags, chats, transcripts fed round-by-round and post-game.", style: "solid" },
+  { id: "c21", from: "adjudication", to: "gm", label: "Evaluation + suggestions", description: "Round-by-round feedback suggestions and post-game analysis delivered to Game Manager, who decides what to share with teams.", style: "solid" },
 ];
 
 export const PRINCIPLES = [
