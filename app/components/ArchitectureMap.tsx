@@ -24,21 +24,51 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
   conn: Connection; fromNode: Node; toNode: Node; isHovered: boolean;
   onMouseEnter: () => void; onMouseLeave: () => void; onClick: () => void;
 }) {
+  const dashArray = conn.style === "dashed" ? "6 4" : conn.style === "dotted" ? "2 4" : undefined;
+  const labelWidth = Math.max(conn.label.length * 7 + 16, 70);
+  const halfW = labelWidth / 2;
+  const strokeColor = isHovered ? "#C41230" : "#94a3b8";
+  const sw = isHovered ? 2 : 1.2;
+
+  if (conn.waypoints && conn.waypoints.length > 0) {
+    const firstWp = conn.waypoints[0];
+    const lastWp = conn.waypoints[conn.waypoints.length - 1];
+    const p1 = getEdgePoint(fromNode, firstWp);
+    const p2 = getEdgePoint(toNode, lastWp);
+    const allPts = [p1, ...conn.waypoints, p2];
+    const pathD = allPts.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x},${pt.y}`).join(" ");
+    const midIdx = Math.floor(allPts.length / 2);
+    const mx = allPts[midIdx].x;
+    const my = allPts[midIdx].y;
+
+    return (
+      <g style={{ cursor: "pointer" }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onClick={onClick}>
+        <path d={pathD} fill="none" stroke={strokeColor} strokeWidth={sw}
+          strokeDasharray={dashArray} markerEnd="url(#arrowhead)" style={{ transition: "stroke 0.15s" }} />
+        <path d={pathD} fill="none" stroke="transparent" strokeWidth={14} />
+        <rect x={mx - halfW} y={my - 9} width={labelWidth} height={18} rx={3} fill={isHovered ? "#C41230" : "white"}
+          stroke={isHovered ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
+        <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={9} fontWeight={600}
+          fill={isHovered ? "white" : "#64748b"} fontFamily="Arial, sans-serif"
+          style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>{conn.label}</text>
+      </g>
+    );
+  }
+
   const fromCenter = getCenter(fromNode);
   const toCenter = getCenter(toNode);
   const p1 = getEdgePoint(fromNode, toCenter);
   const p2 = getEdgePoint(toNode, fromCenter);
   const mx = (p1.x + p2.x) / 2;
   const my = (p1.y + p2.y) / 2;
-  const dashArray = conn.style === "dashed" ? "6 4" : conn.style === "dotted" ? "2 4" : undefined;
 
   return (
     <g style={{ cursor: "pointer" }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onClick={onClick}>
       <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-        stroke={isHovered ? "#C41230" : "#94a3b8"} strokeWidth={isHovered ? 2 : 1.2}
-        strokeDasharray={dashArray} markerEnd="url(#arrow)" style={{ transition: "stroke 0.15s, stroke-width 0.15s" }} />
+        stroke={strokeColor} strokeWidth={sw}
+        strokeDasharray={dashArray} markerEnd="url(#arrowhead)" style={{ transition: "stroke 0.15s, stroke-width 0.15s" }} />
       <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth={14} />
-      <rect x={mx - 48} y={my - 9} width={96} height={18} rx={3} fill={isHovered ? "#C41230" : "white"}
+      <rect x={mx - halfW} y={my - 9} width={labelWidth} height={18} rx={3} fill={isHovered ? "#C41230" : "white"}
         stroke={isHovered ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
       <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={9} fontWeight={600}
         fill={isHovered ? "white" : "#64748b"} fontFamily="Arial, sans-serif"
@@ -151,26 +181,26 @@ export default function ArchitectureMap() {
       <svg width={dims.width} height={dims.height} viewBox={`0 0 ${dims.width} ${dims.height}`} className="absolute inset-0">
         <rect width={dims.width} height={dims.height} fill="#FAFBFC" />
         <defs>
-          <marker id="arrow" viewBox="0 0 8 6" markerWidth="7" markerHeight="5" refX="7" refY="3" orient="auto-start-reverse">
+          <marker id="arrowhead" viewBox="0 0 8 6" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
             <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8" />
           </marker>
         </defs>
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* Tier labels */}
           {[
-            { y: 60, label: "OVERSIGHT" },
-            { y: 200, label: "ENGINE" },
-            { y: 340, label: "INPUT GATE" },
-            { y: 480, label: "ACTORS" },
-            { y: 600, label: "SUPPORT" },
+            { y: 55, label: "OVERSIGHT" },
+            { y: 210, label: "ENGINE" },
+            { y: 365, label: "INPUT GATE" },
+            { y: 520, label: "ACTORS" },
+            { y: 645, label: "SUPPORT" },
           ].map((t) => (
-            <text key={t.label} x={920} y={t.y} textAnchor="end" fontSize={9} fontWeight={700}
+            <text key={t.label} x={950} y={t.y} textAnchor="end" fontSize={9} fontWeight={700}
               fill="#cbd5e1" letterSpacing="0.12em" fontFamily="Arial, sans-serif"
               style={{ userSelect: "none" }}>{t.label}</text>
           ))}
 
           {/* Post-game zone */}
-          <rect x={8} y={8} width={180} height={175} rx={8} fill="none" stroke="#e2e8f0" strokeWidth={1} strokeDasharray="4 4" />
+          <rect x={8} y={8} width={190} height={170} rx={8} fill="none" stroke="#e2e8f0" strokeWidth={1} strokeDasharray="4 4" />
           <text x={16} y={185} fontSize={8} fill="#cbd5e1" fontWeight={600} letterSpacing="0.1em" fontFamily="Arial, sans-serif" style={{ userSelect: "none" }}>POST-GAME</text>
 
           {/* Connections */}
