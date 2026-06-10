@@ -2,6 +2,8 @@
 
 An interactive architecture diagram for the World Engine, the LLM-driven simulation core behind the Operational Gaming Environment (OGE), a geopolitical crisis-gaming platform developed with Carnegie Mellon's CMIST.
 
+**Live demo:** https://oge-architecture-map.vercel.app
+
 The app renders the full system as a clickable SVG canvas: 11 components (Game Manager, World Engine LLM, World State, Teams, AI Actors, Advisors, Reasonableness Filter, White Cell Agent, Adjudication Agent, and the log/database layer) connected by 21 data-flow edges. Clicking any node or edge opens a modal explaining what that component does, what model or storage backs it, and what data crosses the boundary (JSON state patches, filtered indicators, event and inject tags).
 
 ## Why a map
