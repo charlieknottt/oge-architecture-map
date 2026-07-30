@@ -20,12 +20,15 @@ function getEdgePoint(n: Node, target: { x: number; y: number }) {
   return { x: c.x + dx * scale, y: c.y + dy * scale };
 }
 
-function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMouseLeave, onClick }: {
+function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMouseLeave, onClick, mode = "all" }: {
   conn: Connection; fromNode: Node; toNode: Node; isHovered: boolean;
   onMouseEnter: () => void; onMouseLeave: () => void; onClick: () => void;
+  mode?: "all" | "line" | "label";
 }) {
+  const showLine = mode === "line" || mode === "all";
+  const showLabel = mode === "label" || mode === "all";
   const dashArray = conn.style === "dashed" ? "6 4" : conn.style === "dotted" ? "2 4" : undefined;
-  const labelWidth = Math.max(conn.label.length * 8.5 + 20, 80);
+  const labelWidth = Math.max(conn.label.length * 8 + 14, 50);
   const halfW = labelWidth / 2;
   const strokeColor = isHovered ? "#C41230" : "#94a3b8";
   const sw = isHovered ? 2 : 1.2;
@@ -38,19 +41,29 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
     const allPts = [p1, ...conn.waypoints, p2];
     const pathD = allPts.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x},${pt.y}`).join(" ");
     const midIdx = Math.floor(allPts.length / 2);
-    const mx = allPts[midIdx].x;
-    const my = allPts[midIdx].y;
+    const ldx = conn.labelOffset?.dx || 0;
+    const ldy = conn.labelOffset?.dy || 0;
+    const mx = allPts[midIdx].x + ldx;
+    const my = allPts[midIdx].y + ldy;
 
     return (
       <g style={{ cursor: "pointer" }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onClick={onClick}>
-        <path d={pathD} fill="none" stroke={strokeColor} strokeWidth={sw}
-          strokeDasharray={dashArray} markerEnd="url(#arrowhead)" style={{ transition: "stroke 0.15s" }} />
-        <path d={pathD} fill="none" stroke="transparent" strokeWidth={14} />
-        <rect x={mx - halfW} y={my - 11} width={labelWidth} height={22} rx={3} fill={isHovered ? "#C41230" : "white"}
-          stroke={isHovered ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
-        <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={11} fontWeight={600}
-          fill={isHovered ? "white" : "#64748b"} fontFamily="Arial, sans-serif"
-          style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>{conn.label}</text>
+        {showLine && (
+          <>
+            <path d={pathD} fill="none" stroke={strokeColor} strokeWidth={sw}
+              strokeDasharray={dashArray} markerEnd="url(#arrowhead)" style={{ transition: "stroke 0.15s" }} />
+            <path d={pathD} fill="none" stroke="transparent" strokeWidth={14} />
+          </>
+        )}
+        {showLabel && !conn.hideLabel && (
+          <>
+            <rect x={mx - halfW} y={my - 11} width={labelWidth} height={22} rx={3} fill={isHovered ? "#C41230" : "white"}
+              stroke={isHovered ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
+            <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={13} fontWeight={600}
+              fill={isHovered ? "white" : "#334155"} fontFamily="Arial, sans-serif"
+              style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>{conn.label}</text>
+          </>
+        )}
       </g>
     );
   }
@@ -67,8 +80,10 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
   const tc = { x: toCenter.x + nx, y: toCenter.y + ny };
   const p1 = getEdgePoint(fromNode, tc);
   const p2 = getEdgePoint(toNode, fc);
-  p1.x += nx; p1.y += ny;
-  p2.x += nx; p2.y += ny;
+  if (!conn.anchorToEdge) {
+    p1.x += nx; p1.y += ny;
+    p2.x += nx; p2.y += ny;
+  }
   const ldx = conn.labelOffset?.dx || 0;
   const ldy = conn.labelOffset?.dy || 0;
   const mx = (p1.x + p2.x) / 2 + ldx;
@@ -76,15 +91,23 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
 
   return (
     <g style={{ cursor: "pointer" }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onClick={onClick}>
-      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-        stroke={strokeColor} strokeWidth={sw}
-        strokeDasharray={dashArray} markerEnd="url(#arrowhead)" style={{ transition: "stroke 0.15s, stroke-width 0.15s" }} />
-      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth={14} />
-      <rect x={mx - halfW} y={my - 11} width={labelWidth} height={22} rx={3} fill={isHovered ? "#C41230" : "white"}
-        stroke={isHovered ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
-      <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={11} fontWeight={600}
-        fill={isHovered ? "white" : "#64748b"} fontFamily="Arial, sans-serif"
-        style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>{conn.label}</text>
+      {showLine && (
+        <>
+          <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
+            stroke={strokeColor} strokeWidth={sw}
+            strokeDasharray={dashArray} markerEnd="url(#arrowhead)" style={{ transition: "stroke 0.15s, stroke-width 0.15s" }} />
+          <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth={14} />
+        </>
+      )}
+      {showLabel && !conn.hideLabel && (
+        <>
+          <rect x={mx - halfW} y={my - 11} width={labelWidth} height={22} rx={3} fill={isHovered ? "#C41230" : "white"}
+            stroke={isHovered ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
+          <text x={mx} y={my + 3.5} textAnchor="middle" fontSize={11} fontWeight={600}
+            fill={isHovered ? "white" : "#334155"} fontFamily="Arial, sans-serif"
+            style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>{conn.label}</text>
+        </>
+      )}
     </g>
   );
 }
@@ -92,9 +115,8 @@ function ConnectionLine({ conn, fromNode, toNode, isHovered, onMouseEnter, onMou
 function PersonIcon({ x, y, color }: { x: number; y: number; color: string }) {
   return (
     <g transform={`translate(${x}, ${y}) scale(1.6)`} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx={0} cy={-5} r={3.5} fill={color} opacity={0.15} stroke={color} strokeWidth={1.3} />
       <circle cx={0} cy={-5} r={3.5} fill="none" stroke={color} strokeWidth={1.3} />
-      <path d="M-7,7 C-7,2 -4,-1 0,-1 C4,-1 7,2 7,7" fill={color} opacity={0.1} stroke={color} strokeWidth={1.3} />
+      <path d="M-7,7 C-7,2 -4,-1 0,-1 C4,-1 7,2 7,7" fill="none" stroke={color} strokeWidth={1.3} />
     </g>
   );
 }
@@ -102,8 +124,7 @@ function PersonIcon({ x, y, color }: { x: number; y: number; color: string }) {
 function DatabaseIcon({ x, y, color }: { x: number; y: number; color: string }) {
   return (
     <g transform={`translate(${x}, ${y}) scale(1.5)`}>
-      <path d="M-8,-6 L-8,6 C-8,9 -4,10 0,10 C4,10 8,9 8,6 L8,-6" fill={color} opacity={0.08} stroke="none" />
-      <ellipse cx={0} cy={-6} rx={8} ry={3.5} fill={color} opacity={0.15} stroke={color} strokeWidth={1.3} />
+      <ellipse cx={0} cy={-6} rx={8} ry={3.5} fill="none" stroke={color} strokeWidth={1.3} />
       <line x1={-8} y1={-6} x2={-8} y2={6} stroke={color} strokeWidth={1.3} />
       <line x1={8} y1={-6} x2={8} y2={6} stroke={color} strokeWidth={1.3} />
       <ellipse cx={0} cy={6} rx={8} ry={3.5} fill="none" stroke={color} strokeWidth={1.3} />
@@ -114,8 +135,8 @@ function DatabaseIcon({ x, y, color }: { x: number; y: number; color: string }) 
 function ComponentIcon({ x, y, color }: { x: number; y: number; color: string }) {
   return (
     <g transform={`translate(${x}, ${y}) scale(1.5)`} strokeLinecap="round" strokeLinejoin="round">
-      <rect x={-8} y={-8} width={16} height={16} rx={3} fill={color} opacity={0.1} stroke={color} strokeWidth={1.3} />
-      <circle cx={0} cy={0} r={3} fill={color} opacity={0.2} stroke={color} strokeWidth={1} />
+      <rect x={-8} y={-8} width={16} height={16} rx={3} fill="none" stroke={color} strokeWidth={1.3} />
+      <circle cx={0} cy={0} r={3} fill="none" stroke={color} strokeWidth={1} />
       <line x1={0} y1={-5.5} x2={0} y2={-3} stroke={color} strokeWidth={1} />
       <line x1={0} y1={3} x2={0} y2={5.5} stroke={color} strokeWidth={1} />
       <line x1={-5.5} y1={0} x2={-3} y2={0} stroke={color} strokeWidth={1} />
@@ -127,7 +148,7 @@ function ComponentIcon({ x, y, color }: { x: number; y: number; color: string })
 function FilterIcon({ x, y, color }: { x: number; y: number; color: string }) {
   return (
     <g transform={`translate(${x}, ${y}) scale(1.5)`} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M-8,-7 L8,-7 L2,1 L2,7 L-2,9 L-2,1 Z" fill={color} opacity={0.1} stroke={color} strokeWidth={1.3} />
+      <path d="M-8,-7 L8,-7 L2,1 L2,7 L-2,9 L-2,1 Z" fill="none" stroke={color} strokeWidth={1.3} />
     </g>
   );
 }
@@ -145,8 +166,7 @@ function NodeCard({ node, isHovered, onMouseEnter, onMouseLeave, onClick }: {
 }) {
   const cx = node.x + node.w / 2;
   const iconY = node.y + 20;
-  const labelY = node.y + node.h - 20;
-  const typeY = node.y + node.h - 8;
+  const labelY = node.y + node.h - 14;
 
   return (
     <g style={{ cursor: "pointer" }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onClick={onClick}>
@@ -155,20 +175,21 @@ function NodeCard({ node, isHovered, onMouseEnter, onMouseLeave, onClick }: {
           fill={node.bg} stroke={node.color} strokeWidth={1.5} opacity={0.4} />
       )}
       <rect x={node.x} y={node.y} width={node.w} height={node.h} rx={6}
-        fill={isHovered ? node.bg : "#fff"} stroke={node.border} strokeWidth={isHovered ? 1.5 : 1}
-        style={{ transition: "fill 0.15s, stroke-width 0.15s" }} />
+        fill={node.bg} stroke={node.border} strokeWidth={isHovered ? 1.5 : 1}
+        style={{ transition: "stroke-width 0.15s" }} />
       <NodeIcon icon={node.icon} x={cx} y={iconY} color={node.color} />
       <text x={cx} y={labelY} textAnchor="middle"
-        fontSize={14} fontWeight={700} fill={node.color} fontFamily="Arial, sans-serif"
+        fontSize={16} fontWeight={700} fill={node.color} fontFamily="Arial, sans-serif"
         style={{ pointerEvents: "none", userSelect: "none" }}>{node.label}</text>
-      <text x={cx} y={typeY} textAnchor="middle"
-        fontSize={11} fill="#94a3b8" fontFamily="Arial, sans-serif"
-        style={{ pointerEvents: "none", userSelect: "none" }}>{node.type}</text>
     </g>
   );
 }
 
-export default function ArchitectureMap() {
+export default function ArchitectureMap({ walkthroughActive = false, activeNodes, activeConnections }: {
+  walkthroughActive?: boolean;
+  activeNodes?: Set<string>;
+  activeConnections?: Set<string>;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ width: 960, height: 700 });
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -179,15 +200,16 @@ export default function ArchitectureMap() {
   const panStartRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    function updateSize() {
-      if (containerRef.current) {
-        const r = containerRef.current.getBoundingClientRect();
-        setDims({ width: r.width, height: r.height });
-      }
-    }
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    const el = containerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setDims({ width: r.width, height: r.height });
+    const observer = new ResizeObserver(() => {
+      const rect = el.getBoundingClientRect();
+      setDims({ width: rect.width, height: rect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -236,6 +258,26 @@ export default function ArchitectureMap() {
     });
   }, [dims]);
 
+  const noOp = useCallback(() => {}, []);
+
+  useEffect(() => {
+    if (walkthroughActive) {
+      setPopup(null);
+      setHoveredNode(null);
+      setHoveredConn(null);
+    }
+  }, [walkthroughActive]);
+
+  const getNodeOpacity = (nodeId: string) => {
+    if (!walkthroughActive || !activeNodes) return 1;
+    return activeNodes.has(nodeId) ? 1 : 0.15;
+  };
+
+  const getConnOpacity = (connId: string) => {
+    if (!walkthroughActive || !activeConnections) return 1;
+    return activeConnections.has(connId) ? 1 : 0.15;
+  };
+
   return (
     <div ref={containerRef} className="relative w-full h-full" style={{ cursor: isPanning ? "grabbing" : "grab", overflow: "hidden" }}
       onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
@@ -250,54 +292,103 @@ export default function ArchitectureMap() {
           {/* Tier scaffolding */}
           {(() => {
             const tiers = [
-              { y1: 15, y2: 128, label: "OVERSIGHT" },
-              { y1: 128, y2: 280, label: "ENGINE" },
-              { y1: 280, y2: 430, label: "INPUT GATE" },
-              { y1: 430, y2: 590, label: "ACTORS" },
-              { y1: 590, y2: 720, label: "SUPPORT" },
+              { y1: 15, y2: 150, label: "OVERSIGHT" },
+              { y1: 150, y2: 340, label: "ENGINE" },
+              { y1: 340, y2: 510, label: "INPUT GATE" },
+              { y1: 510, y2: 690, label: "ACTORS" },
+              { y1: 690, y2: 820, label: "SUPPORT" },
             ];
-            const railX = 980;
+            const railX = 1130;
             return (
               <g>
-                <line x1={railX} y1={tiers[0].y1} x2={railX} y2={tiers[tiers.length - 1].y2} stroke="#043673" strokeWidth={2} opacity={0.15} />
+                <line x1={railX} y1={tiers[0].y1} x2={railX} y2={tiers[tiers.length - 1].y2} stroke="#043673" strokeWidth={2} opacity={0.3} />
                 {tiers.map((t) => (
                   <g key={t.label}>
-                    <line x1={railX - 16} y1={t.y1} x2={railX} y2={t.y1} stroke="#043673" strokeWidth={1.5} opacity={0.15} />
-                    <text x={railX - 22} y={(t.y1 + t.y2) / 2 + 4} textAnchor="end" fontSize={12} fontWeight={800}
-                      fill="#043673" opacity={0.35} letterSpacing="0.14em" fontFamily="Arial, sans-serif"
+                    <line x1={railX - 16} y1={t.y1} x2={railX} y2={t.y1} stroke="#043673" strokeWidth={1.5} opacity={0.3} />
+                    <text x={railX - 22} y={(t.y1 + t.y2) / 2 + 4} textAnchor="end" fontSize={14} fontWeight={800}
+                      fill="#1e293b" opacity={0.7} letterSpacing="0.14em" fontFamily="Arial, sans-serif"
                       style={{ userSelect: "none" }}>{t.label}</text>
                   </g>
                 ))}
-                <line x1={railX - 16} y1={tiers[tiers.length - 1].y2} x2={railX} y2={tiers[tiers.length - 1].y2} stroke="#043673" strokeWidth={1.5} opacity={0.15} />
+                <line x1={railX - 16} y1={tiers[tiers.length - 1].y2} x2={railX} y2={tiers[tiers.length - 1].y2} stroke="#043673" strokeWidth={1.5} opacity={0.3} />
               </g>
             );
           })()}
 
           {/* Adjudication zone */}
-          <rect x={8} y={8} width={205} height={105} rx={8} fill="none" stroke="#e2e8f0" strokeWidth={1} strokeDasharray="4 4" />
-          <text x={16} y={120} fontSize={8} fill="#cbd5e1" fontWeight={600} letterSpacing="0.1em" fontFamily="Arial, sans-serif" style={{ userSelect: "none" }}>ADJUDICATION</text>
+          <g style={{ opacity: getNodeOpacity("adjudication"), transition: "opacity 0.4s ease" }}>
+            <rect x={8} y={8} width={240} height={115} rx={8} fill="none" stroke="#334155" strokeWidth={1} strokeDasharray="4 4" />
+            <text x={16} y={138} fontSize={10} fill="#334155" fontWeight={600} letterSpacing="0.1em" fontFamily="Arial, sans-serif" style={{ userSelect: "none" }}>ADJUDICATION</text>
+          </g>
 
-          {/* Connections */}
+          {/* Connection lines (first pass) */}
           {CONNECTIONS.map((conn) => {
             const from = nodeMap[conn.from];
             const to = nodeMap[conn.to];
             if (!from || !to) return null;
             return (
-              <ConnectionLine key={conn.id} conn={conn} fromNode={from} toNode={to}
-                isHovered={hoveredConn === conn.id}
-                onMouseEnter={() => setHoveredConn(conn.id)}
-                onMouseLeave={() => setHoveredConn(null)}
-                onClick={() => setPopup({ title: conn.label, subtitle: `${from.label} → ${to.label}`, description: conn.description, color: "#C41230" })} />
+              <g key={`${conn.id}-line`} style={{ opacity: getConnOpacity(conn.id), transition: "opacity 0.4s ease" }}>
+                <ConnectionLine mode="line" conn={conn} fromNode={from} toNode={to}
+                  isHovered={walkthroughActive ? false : hoveredConn === conn.id}
+                  onMouseEnter={walkthroughActive ? noOp : () => setHoveredConn(conn.id)}
+                  onMouseLeave={walkthroughActive ? noOp : () => setHoveredConn(null)}
+                  onClick={walkthroughActive ? noOp : () => setPopup({ title: conn.label, subtitle: `${from.label} → ${to.label}`, description: conn.description, color: "#C41230" })} />
+              </g>
+            );
+          })}
+
+          {/* Filtered state fan label */}
+          <g style={{ opacity: walkthroughActive && activeConnections ? (activeConnections.has("c10") || activeConnections.has("c11") || activeConnections.has("c12") ? 1 : 0.15) : 1, transition: "opacity 0.4s ease" }}>
+            <g style={{ cursor: walkthroughActive ? "default" : "pointer" }}
+              onClick={walkthroughActive ? undefined : () => setPopup({ title: "Filtered state", subtitle: "World State → All Actors", description: "Updated indicators filtered to each actor's role, plus the global event and per-team narrative. Human teams and AI actors receive the same filtered view, consistent with multi-actor parity.", color: "#008285" })}>
+              <rect x={776} y={314} width={148} height={22} rx={3} fill="white" stroke="#e2e8f0" strokeWidth={0.5} />
+              <text x={850} y={328.5} textAnchor="middle" fontSize={13} fontWeight={600} fill="#334155" fontFamily="Arial, sans-serif"
+                style={{ pointerEvents: "none", userSelect: "none" }}>Filtered state</text>
+            </g>
+          </g>
+
+          {/* Recommend injects label */}
+          <g style={{ opacity: getConnOpacity("c13"), transition: "opacity 0.4s ease" }}>
+            <g style={{ cursor: walkthroughActive ? "default" : "pointer" }}
+              onMouseEnter={walkthroughActive ? undefined : () => setHoveredConn("c13")}
+              onMouseLeave={walkthroughActive ? undefined : () => setHoveredConn(null)}
+              onClick={walkthroughActive ? undefined : () => setPopup({ title: "Recommend injects", subtitle: "White Cell Agent → Game Manager", description: "Plain-language inject recommendations; Game Manager approves or rejects.", color: "#007BC0" })}>
+              <rect x={524} y={57} width={82} height={30} rx={3} fill={hoveredConn === "c13" ? "#C41230" : "white"}
+                stroke={hoveredConn === "c13" ? "#C41230" : "#e2e8f0"} strokeWidth={0.5} style={{ transition: "fill 0.15s" }} />
+              <text x={565} y={70} textAnchor="middle" fontSize={10} fontWeight={600}
+                fill={hoveredConn === "c13" ? "white" : "#334155"} fontFamily="Arial, sans-serif"
+                style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>Recommend</text>
+              <text x={565} y={82} textAnchor="middle" fontSize={10} fontWeight={600}
+                fill={hoveredConn === "c13" ? "white" : "#334155"} fontFamily="Arial, sans-serif"
+                style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}>injects</text>
+            </g>
+          </g>
+
+          {/* Connection labels (second pass - on top of all lines) */}
+          {CONNECTIONS.map((conn) => {
+            const from = nodeMap[conn.from];
+            const to = nodeMap[conn.to];
+            if (!from || !to) return null;
+            return (
+              <g key={`${conn.id}-label`} style={{ opacity: getConnOpacity(conn.id), transition: "opacity 0.4s ease" }}>
+                <ConnectionLine mode="label" conn={conn} fromNode={from} toNode={to}
+                  isHovered={walkthroughActive ? false : hoveredConn === conn.id}
+                  onMouseEnter={walkthroughActive ? noOp : () => setHoveredConn(conn.id)}
+                  onMouseLeave={walkthroughActive ? noOp : () => setHoveredConn(null)}
+                  onClick={walkthroughActive ? noOp : () => setPopup({ title: conn.label, subtitle: `${from.label} → ${to.label}`, description: conn.description, color: "#C41230" })} />
+              </g>
             );
           })}
 
           {/* Nodes */}
           {NODES.map((node) => (
-            <NodeCard key={node.id} node={node}
-              isHovered={hoveredNode === node.id}
-              onMouseEnter={() => setHoveredNode(node.id)}
-              onMouseLeave={() => setHoveredNode(null)}
-              onClick={() => setPopup({ title: node.label, subtitle: node.type, description: node.description, color: node.color })} />
+            <g key={node.id} style={{ opacity: getNodeOpacity(node.id), transition: "opacity 0.4s ease" }}>
+              <NodeCard node={node}
+                isHovered={walkthroughActive ? false : hoveredNode === node.id}
+                onMouseEnter={walkthroughActive ? noOp : () => setHoveredNode(node.id)}
+                onMouseLeave={walkthroughActive ? noOp : () => setHoveredNode(null)}
+                onClick={walkthroughActive ? noOp : () => setPopup({ title: node.label, subtitle: node.type, description: node.description, color: node.color })} />
+            </g>
           ))}
         </g>
       </svg>
@@ -318,7 +409,7 @@ export default function ArchitectureMap() {
         </div>
       </div>
 
-      {popup && (
+      {popup && !walkthroughActive && (
         <div className="popup-overlay">
           <Popup title={popup.title} subtitle={popup.subtitle} description={popup.description} color={popup.color} onClose={() => setPopup(null)} />
         </div>
